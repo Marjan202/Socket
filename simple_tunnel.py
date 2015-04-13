@@ -1,14 +1,22 @@
 #!/usr/bin/env python
+"""
 
-import socket 
+ChangeLog:
+    [date] [version]
+        * edit 1
+        * edit 2
+
+"""
+
+import socket
 import argparse
-import time
 from select import select
-from Queue import Queue
+__version__ = '0.1.0'
 
 parser = argparse.ArgumentParser(description='Creates a simple TCP port forwarder.')
 parser.add_argument('-l', '--listen', required=True, metavar='IPADDRESS:PORT', help='The IP address & port to listen on.')
 parser.add_argument('-f', '--forward', required=True, metavar='IPADDRESS:PORT', help='The IP address & port to to forward.')
+parser.add_argument('-m', '--mtu', default=1400, type=int, metavar='MTU', help='Maximum read/write size. default: 1400')
 
 
 def main(listen, target):
@@ -24,43 +32,27 @@ def main(listen, target):
     target_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     target_socket.connect_ex(target)
 
-    target_buff = Queue()
-    client_buff = Queue()
-    chunk_size = 1400
+    chunk_size = args.mtu
 
-    # target_socket.setblocking(0)
-    # server_socket.setblocking(0)
-    # client_conn.setblocking(0)
     try:
         while True:
-            try:
-                
-                to_read, to_write, ex = select(
-                    [client_conn, target_socket],
-                    [client_conn, target_socket],
-                    [], .05)
-                    
-                if client_conn in to_read:
-                    target_buff.put_nowait(client_conn.recv(chunk_size))
+            to_read = select(
+                [client_conn, target_socket],
+                [],
+                [], .05)[0]
 
-                if target_socket in to_read:
-                    client_buff.put_nowait(target_socket.recv(chunk_size))
+            if client_conn in to_read:
+                target_socket.send(client_conn.recv(chunk_size))
 
-                if client_conn in to_write and not client_buff.empty():
-                    client_conn.send(client_buff.get_nowait())
+            if target_socket in to_read:
+                client_conn.send(target_socket.recv(chunk_size))
 
-                if target_socket in to_write and not target_buff.empty():
-                    target_socket.send(target_buff.get_nowait())
+    except KeyboardInterrupt:
+        print("\nCTRL+C pressed.")
 
-
-            except KeyboardInterrupt:
-                print("\nCTRL+C pressed.")
-                break
-    
     finally:
         client_conn.close()
         target_socket.close()
-        
 
 if __name__ == '__main__':
     args = parser.parse_args()
