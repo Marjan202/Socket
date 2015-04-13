@@ -22,35 +22,39 @@ def main(listen, target):
     
     # Create and connect the target socket
     target_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    target_socket.connect(target) 
-       
+    target_socket.connect_ex(target)
+
     target_buff = Queue()
     client_buff = Queue()
     chunk_size = 1400
-    
+
+    # target_socket.setblocking(0)
+    # server_socket.setblocking(0)
+    # client_conn.setblocking(0)
     try:
         while True:
             try:
                 
-                to_write, to_read, ex = select(
+                to_read, to_write, ex = select(
                     [client_conn, target_socket],
                     [client_conn, target_socket],
-                    []) 
-                    
-                if target_socket in to_read:
-                    target_buff.put_nowait(target_socket.recv(chunk_size))
+                    [], .05)
                     
                 if client_conn in to_read:
                     target_buff.put_nowait(client_conn.recv(chunk_size))
-                    
-                if target_socket in to_write and not target_buff.empty():
-                    target.socket.send(target_buff.get_nowait())
-                  
+
+                if target_socket in to_read:
+                    client_buff.put_nowait(target_socket.recv(chunk_size))
+
                 if client_conn in to_write and not client_buff.empty():
                     client_conn.send(client_buff.get_nowait())
-                
+
+                if target_socket in to_write and not target_buff.empty():
+                    target_socket.send(target_buff.get_nowait())
+
+
             except KeyboardInterrupt:
-                print "\nCTRL+C pressed."
+                print("\nCTRL+C pressed.")
                 break
     
     finally:
@@ -59,8 +63,8 @@ def main(listen, target):
         
 
 if __name__ == '__main__':
-	args = parser.parse_args()
-	listen_addr, listen_port = args.listen.split(':')
-	forward_addr, forward_port = args.forward.split(':')
-	main((listen_addr, int(listen_port)), (forward_addr, int(forward_port)))
+    args = parser.parse_args()
+    listen_addr, listen_port = args.listen.split(':')
+    forward_addr, forward_port = args.forward.split(':')
+    main((listen_addr, int(listen_port)), (forward_addr, int(forward_port)))
 	
