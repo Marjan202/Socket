@@ -15,13 +15,16 @@ ChangeLog:
     [2015-04-15] 0.2.1
         * Separating connection handling method, So, its ready to cast as a threaded server.
 
+    [2015-04-15] 0.2.2
+        * Enhanced printing
 """
 
 import sys
 import socket
 import argparse
-from select import select
-__version__ = '0.2.1'
+import time
+import select
+__version__ = '0.2.2'
 
 parser = argparse.ArgumentParser(description='Creates a simple TCP port forwarder.')
 parser.add_argument('-l', '--listen', required=True, metavar='HOST:PORT', help='The Host & port to listen on.')
@@ -29,15 +32,22 @@ parser.add_argument('-f', '--forward', required=True, metavar='HOST:PORT', help=
 parser.add_argument('-m', '--mtu', default=1400, type=int, metavar='MTU', help='Maximum read/write size. default: 1400')
 parser.add_argument('-R', '--reusable', action="store_true", default=False, help='Reusable tunnel, making new socket to the target server after closing and reestablishing the client socket.')
 
+KB = 1024
+MB = KB**2
+GB = KB**3
+TB = KB**4
+
 
 def format_size(s):
-    if s > 1073741824:
-        return '%s GB' % (s / 1073741824)
+    if s > TB:
+        return '%.2FTB' % (float(s) / TB)
+    if s > GB:
+        return '%.2FGB' % (float(s) / GB)
     if s > 1048576:
-        return '%s MB' % (s / 1048576)
+        return '%.2FMB' % (float(s) / MB)
     if s > 1024:
-        return '%s KB' % (s / 1024)
-    return '%s B' % s
+        return '%.2FKB' % (float(s) / KB)
+    return '%sB' % s
 
 
 def handle_connection(client_conn, client_addr):
@@ -49,12 +59,13 @@ def handle_connection(client_conn, client_addr):
     transfer_size = 0
     receive_size = 0
     loops = 0
+    start_time = time.time()
 
     try:
 
         while True:
             loops += 1
-            to_read = select(
+            to_read = select.select(
                 [client_conn, target_socket],
                 [],
                 [], .02)[0]
@@ -78,7 +89,13 @@ def handle_connection(client_conn, client_addr):
                 client_conn.send(data)
 
             if loops % 10 == 0:
-                sys.stdout.write('\rSend: %s, Receive : %s        ' % (format_size(transfer_size), format_size(receive_size)))
+                elapsed_time = time.time() - start_time
+
+                sys.stdout.write('\rSend: %s %s/s, Receive : %s %s/s       ' % (
+                    format_size(transfer_size),
+                    format_size(float(transfer_size) / elapsed_time),
+                    format_size(receive_size),
+                    format_size(float(receive_size) / elapsed_time)))
                 sys.stdout.flush()
             # time.sleep(.001)
         print
