@@ -21,6 +21,9 @@ ChangeLog:
     [2015-04-15] 0.3.0
         * Multi-threading
 
+    [2015-04-15] 0.3.1
+        * Print delay increased
+
 """
 
 import sys
@@ -123,8 +126,7 @@ def printing_job():
             format_size(0 if not threads else float(receive_size) / elapsed_time),
             threads))
         sys.stdout.flush()
-
-        time.sleep(.1)
+        time.sleep(.2)
 
 
 if __name__ == '__main__':
