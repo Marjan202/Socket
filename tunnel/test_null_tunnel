@@ -2,7 +2,7 @@
 
 nc -l 6543 > out.txt &
 sleep 1
-./null_tunnel.py -llocalhost:6544 -flocalhost:6543 &
+./null_tunnel.py -l6544 -f6543 &
 sleep 1
 echo "Secret Message" | nc localhost 6544
 #kill -9 `pgrep nc`

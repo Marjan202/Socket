@@ -27,8 +27,8 @@ import select
 __version__ = '0.2.2'
 
 parser = argparse.ArgumentParser(description='Creates a simple TCP port forwarder.')
-parser.add_argument('-l', '--listen', required=True, metavar='HOST:PORT', help='The Host & port to listen on.')
-parser.add_argument('-f', '--forward', required=True, metavar='HOST:PORT', help='The Host & port to to forward.')
+parser.add_argument('-l', '--listen', required=True, metavar='[HOST:]PORT', help='The Host & port to listen on.')
+parser.add_argument('-f', '--forward', required=True, metavar='[HOST:]PORT', help='The Host & port to to forward.')
 parser.add_argument('-m', '--mtu', default=1400, type=int, metavar='MTU', help='Maximum read/write size. default: 1400')
 parser.add_argument('-R', '--reusable', action="store_true", default=False, help='Reusable tunnel, making new socket to the target server after closing and reestablishing the client socket.')
 
@@ -47,7 +47,17 @@ def format_size(s):
         return '%.2FMB' % (float(s) / MB)
     if s > KB:
         return '%.2FKB' % (float(s) / KB)
-    return '%sB' % s
+    return '%.2FB' % s
+
+
+def get_address(addr_string):
+    if ':' in addr_string:
+        addr, port = addr_string.split(':')
+    else:
+        addr, port = '127.0.0.1', addr_string
+    if not isinstance(port, int):
+        port = int(port)
+    return addr, port
 
 
 def handle_connection(client_conn, client_addr):
@@ -58,7 +68,7 @@ def handle_connection(client_conn, client_addr):
     target_socket.connect(target)
     transfer_size = 0
     receive_size = 0
-    loops = 0
+    loops = -1
     start_time = time.time()
 
     try:
@@ -68,7 +78,7 @@ def handle_connection(client_conn, client_addr):
             to_read = select.select(
                 [client_conn, target_socket],
                 [],
-                [], .02)[0]
+                [], .01)[0]
 
             if client_conn in to_read:
                 data = client_conn.recv(chunk_size)
@@ -90,14 +100,13 @@ def handle_connection(client_conn, client_addr):
 
             if loops % 10 == 0:
                 elapsed_time = time.time() - start_time
-
                 sys.stdout.write('\rSend: %s %s/s, Receive : %s %s/s       ' % (
                     format_size(transfer_size),
                     format_size(float(transfer_size) / elapsed_time),
                     format_size(receive_size),
                     format_size(float(receive_size) / elapsed_time)))
                 sys.stdout.flush()
-            # time.sleep(.001)
+                #time.sleep(.001)
         print
     finally:
         if client_conn:
@@ -109,13 +118,8 @@ def handle_connection(client_conn, client_addr):
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    listen_addr, listen_port = args.listen.split(':')
-    listen_port = int(listen_port)
-    listen = listen_addr, listen_port
-
-    target_addr, target_port = args.forward.split(':')
-    target_port = int(target_port)
-    target = target_addr, target_port
+    listen = get_address(args.listen)
+    target = get_address(args.forward)
 
     # Create and listen on the server socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -124,7 +128,7 @@ if __name__ == '__main__':
 
     try:
         while True:
-            server_socket.listen(3)
+            server_socket.listen(0)
             handle_connection(*server_socket.accept())
             if not args.reusable:
                 break
