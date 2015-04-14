@@ -43,9 +43,9 @@ def format_size(s):
         return '%.2FTB' % (float(s) / TB)
     if s > GB:
         return '%.2FGB' % (float(s) / GB)
-    if s > 1048576:
+    if s > MB:
         return '%.2FMB' % (float(s) / MB)
-    if s > 1024:
+    if s > KB:
         return '%.2FKB' % (float(s) / KB)
     return '%sB' % s
 
