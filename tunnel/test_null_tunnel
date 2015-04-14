@@ -1,0 +1,9 @@
+#!/bin/bash
+
+nc -l 6543 > out.txt &
+sleep 1
+./null_tunnel.py -llocalhost:6544 -flocalhost:6543 &
+sleep 1
+echo "Secret Message" | nc localhost 6543
+sleep 1
+kill -9 `pgrep -f "null_tunnel"`

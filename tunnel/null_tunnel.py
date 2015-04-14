@@ -2,20 +2,22 @@
 """
 
 ChangeLog:
-    [date] [version]
-        * edit 1
-        * edit 2
+    [2015-04-14] [0.1.1]
+        * Passing None instead of empty list to select function
+        * Changing `IP Address` to `HOST` in command line help
+        * Program name changed to `null_tunnel`
+        * Test case was provided
 
 """
 
 import socket
 import argparse
 from select import select
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 parser = argparse.ArgumentParser(description='Creates a simple TCP port forwarder.')
-parser.add_argument('-l', '--listen', required=True, metavar='IPADDRESS:PORT', help='The IP address & port to listen on.')
-parser.add_argument('-f', '--forward', required=True, metavar='IPADDRESS:PORT', help='The IP address & port to to forward.')
+parser.add_argument('-l', '--listen', required=True, metavar='HOST:PORT', help='The Host & port to listen on.')
+parser.add_argument('-f', '--forward', required=True, metavar='HOST:PORT', help='The Host & port to to forward.')
 parser.add_argument('-m', '--mtu', default=1400, type=int, metavar='MTU', help='Maximum read/write size. default: 1400')
 
 
@@ -38,8 +40,8 @@ def main(listen, target):
         while True:
             to_read = select(
                 [client_conn, target_socket],
-                [],
-                [], .05)[0]
+                None,
+                None)[0]
 
             if client_conn in to_read:
                 target_socket.send(client_conn.recv(chunk_size))
@@ -59,4 +61,4 @@ if __name__ == '__main__':
     listen_addr, listen_port = args.listen.split(':')
     forward_addr, forward_port = args.forward.split(':')
     main((listen_addr, int(listen_port)), (forward_addr, int(forward_port)))
-	
+
