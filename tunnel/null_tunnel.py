@@ -81,7 +81,6 @@ def handle_connection(client_conn, client_addr):
                 sys.stdout.write('\rSend: %s, Receive : %s        ' % (format_size(transfer_size), format_size(receive_size)))
                 sys.stdout.flush()
             # time.sleep(.001)
-
         print
     finally:
         if client_conn:
