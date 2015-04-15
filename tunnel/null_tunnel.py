@@ -25,6 +25,10 @@ ChangeLog:
         * Print delay increased
         * Some code optimizations
 
+    [2015-04-15] 0.3.2
+        * Bug-fix
+
+
 """
 
 import sys
@@ -34,7 +38,7 @@ import time
 import select
 import threading
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 
 parser = argparse.ArgumentParser(description='Creates a simple TCP port forwarder.')
 parser.add_argument('-l', '--listen', required=True, metavar='[HOST:]PORT', help='The Host & port to listen on.')
@@ -97,7 +101,6 @@ def handle_connection(client_conn, client_addr):
             if client_conn in to_read:
                 data = client_conn.recv(chunk_size)
                 if not data:
-                    close_sockets()
                     break
                 transfer_size += len(data)
                 target_socket.send(data)
@@ -105,7 +108,6 @@ def handle_connection(client_conn, client_addr):
             if target_socket in to_read:
                 data = target_socket.recv(chunk_size)
                 if not data:
-                    close_sockets()
                     break
                 receive_size += len(data)
                 client_conn.send(data)
