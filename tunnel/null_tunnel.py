@@ -23,6 +23,7 @@ ChangeLog:
 
     [2015-04-15] 0.3.1
         * Print delay increased
+        * Some code optimizations
 
 """
 
@@ -33,7 +34,7 @@ import time
 import select
 import threading
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 parser = argparse.ArgumentParser(description='Creates a simple TCP port forwarder.')
 parser.add_argument('-l', '--listen', required=True, metavar='[HOST:]PORT', help='The Host & port to listen on.')
@@ -42,7 +43,7 @@ parser.add_argument('-m', '--mtu', default=1400, type=int, metavar='MTU', help='
 parser.add_argument('-R', '--reusable', action="store_true", default=False,
                     help='Reusable tunnel, making new socket to the target server after closing and reestablishing the client socket.')
 parser.add_argument('-t', '--threaded', action="store_true", default=False,
-                    help='Implies -R. Act as a multi-thread server, so it can handle more than one connection simultaneously.')
+                    help='Implies -R. Act as a multi-thread server, so it can handle more than one connections simultaneously.')
 
 KB = 1024
 MB = KB ** 2
@@ -80,6 +81,11 @@ def handle_connection(client_conn, client_addr):
     target_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     target_socket.connect(target)
 
+    def close_sockets():
+        for s in (client_conn, target_socket):
+            if s:
+                s.close()
+
     try:
 
         while True:
@@ -91,8 +97,7 @@ def handle_connection(client_conn, client_addr):
             if client_conn in to_read:
                 data = client_conn.recv(chunk_size)
                 if not data:
-                    client_conn.close()
-                    target_socket.close()
+                    close_sockets()
                     break
                 transfer_size += len(data)
                 target_socket.send(data)
@@ -100,16 +105,12 @@ def handle_connection(client_conn, client_addr):
             if target_socket in to_read:
                 data = target_socket.recv(chunk_size)
                 if not data:
-                    client_conn.close()
-                    target_socket.close()
+                    close_sockets()
                     break
                 receive_size += len(data)
                 client_conn.send(data)
     finally:
-        if client_conn:
-            client_conn.close()
-        if target_socket:
-            target_socket.close()
+        close_sockets()
 
 
 def printing_job():
