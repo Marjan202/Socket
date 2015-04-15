@@ -28,6 +28,8 @@ ChangeLog:
     [2015-04-15] 0.3.2
         * Bug-fix
 
+    [2015-04-15] 0.3.3
+        * `-r` instead of `-R`
 
 """
 
@@ -38,13 +40,13 @@ import time
 import select
 import threading
 
-__version__ = '0.3.2'
+__version__ = '0.3.3'
 
 parser = argparse.ArgumentParser(description='Creates a simple TCP port forwarder.')
 parser.add_argument('-l', '--listen', required=True, metavar='[HOST:]PORT', help='The Host & port to listen on.')
 parser.add_argument('-f', '--forward', required=True, metavar='[HOST:]PORT', help='The Host & port to to forward.')
 parser.add_argument('-m', '--mtu', default=1400, type=int, metavar='MTU', help='Maximum read/write size. default: 1400')
-parser.add_argument('-R', '--reusable', action="store_true", default=False,
+parser.add_argument('-r', '--reusable', action="store_true", default=False,
                     help='Reusable tunnel, making new socket to the target server after closing and reestablishing the client socket.')
 parser.add_argument('-t', '--threaded', action="store_true", default=False,
                     help='Implies -R. Act as a multi-thread server, so it can handle more than one connections simultaneously.')
@@ -85,11 +87,6 @@ def handle_connection(client_conn, client_addr):
     target_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     target_socket.connect(target)
 
-    def close_sockets():
-        for s in (client_conn, target_socket):
-            if s:
-                s.close()
-
     try:
 
         while True:
@@ -112,8 +109,10 @@ def handle_connection(client_conn, client_addr):
                 receive_size += len(data)
                 client_conn.send(data)
     finally:
-        close_sockets()
-
+        if client_conn:
+            client_conn.close()
+        if target_socket:
+            target_socket.close()
 
 def printing_job():
     global transfer_size, receive_size
