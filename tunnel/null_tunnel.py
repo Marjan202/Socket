@@ -9,7 +9,7 @@ ChangeLog:
 
     [2015-04-15] 0.2.0
         * Closing both sockets on zero length read. refer: http://stackoverflow.com/a/667710/680372
-        * -R switch. Reusable tunnel, making new socket to the target server after closing and reestablishing the client socket.
+        * -r switch. Reusable tunnel, making new socket to the target server after closing and reestablishing the client socket.
         * Enhanced printing
 
     [2015-04-15] 0.2.1
@@ -49,7 +49,7 @@ parser.add_argument('-m', '--mtu', default=1400, type=int, metavar='MTU', help='
 parser.add_argument('-r', '--reusable', action="store_true", default=False,
                     help='Reusable tunnel, making new socket to the target server after closing and reestablishing the client socket.')
 parser.add_argument('-t', '--threaded', action="store_true", default=False,
-                    help='Implies -R. Act as a multi-thread server, so it can handle more than one connections simultaneously.')
+                    help='Implies -r. Act as a multi-thread server, so it can handle more than one connections simultaneously.')
 
 KB = 1024
 MB = KB ** 2
