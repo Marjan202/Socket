@@ -31,6 +31,10 @@ ChangeLog:
     [2015-04-15] 0.3.3
         * `-r` instead of `-R`
 
+    [2015-04-20] 0.3.4
+        * `-q` option, No printing
+
+
 """
 
 import sys
@@ -40,7 +44,7 @@ import time
 import select
 import threading
 
-__version__ = '0.3.3'
+__version__ = '0.3.4'
 
 parser = argparse.ArgumentParser(description='Creates a simple TCP port forwarder.')
 parser.add_argument('-l', '--listen', required=True, metavar='[HOST:]PORT', help='The Host & port to listen on.')
@@ -50,6 +54,8 @@ parser.add_argument('-r', '--reusable', action="store_true", default=False,
                     help='Reusable tunnel, making new socket to the target server after closing and reestablishing the client socket.')
 parser.add_argument('-t', '--threaded', action="store_true", default=False,
                     help='Implies -r. Act as a multi-thread server, so it can handle more than one connections simultaneously.')
+parser.add_argument('-q', '--quiet', action="store_true", default=False,
+                    help="Be quiet, No printing")
 
 KB = 1024
 MB = KB ** 2
@@ -114,6 +120,7 @@ def handle_connection(client_conn, client_addr):
         if target_socket:
             target_socket.close()
 
+
 def printing_job():
     global transfer_size, receive_size
     start_time = time.time()
@@ -147,11 +154,13 @@ if __name__ == '__main__':
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(listen)
 
-    printing_thread = threading.Thread(
-        target=printing_job,
-        name='nt_printing')
-    printing_thread.daemon = True
-    printing_thread.start()
+    if not args.quiet:
+        printing_thread = threading.Thread(
+            target=printing_job,
+            name='nt_printing')
+        printing_thread.daemon = True
+        printing_thread.start()
+
     try:
         while True:
             if args.threaded:
